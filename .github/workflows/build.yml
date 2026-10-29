@@ -1,0 +1,83 @@
+name: Build Fairy Recovery (duchamp)
+
+on:
+  workflow_dispatch:
+    inputs:
+      fox_branch:
+        description: OrangeFox branch
+        default: "14.1"
+
+env:
+  FOX_DIR: /home/runner/fox
+  DEVICE: duchamp
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check prebuilt files
+        run: |
+          for f in kernel dtb.img modules/modules.load.recovery; do
+            test -s device/xiaomi/duchamp/prebuilt/$f || { echo "Missing prebuilt/$f - tools/extract.py chalao"; exit 1; }
+          done
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev \
+            libc6-dev-i386 libncurses5 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev \
+            libxml2-utils xsltproc unzip fontconfig python3 python-is-python3 rsync bc lz4 cpio ccache
+          mkdir -p ~/bin
+          curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod +x ~/bin/repo
+          echo "$HOME/bin" >> $GITHUB_PATH
+          git config --global user.name "fairy-ci"
+          git config --global user.email "ci@example.com"
+
+      - name: Sync OrangeFox
+        run: |
+          git clone https://gitlab.com/OrangeFox/sync.git ~/sync
+          cd ~/sync
+          ./orangefox_sync.sh --branch ${{ github.event.inputs.fox_branch }} --path $FOX_DIR
+
+      - name: Add device tree and branding
+        run: |
+          mkdir -p $FOX_DIR/device/xiaomi
+          cp -r device/xiaomi/duchamp $FOX_DIR/device/xiaomi/
+          # Optional: branding/ me logo/theme files ho to unhe overlay karo
+          if [ -d branding/overlay ]; then cp -r branding/overlay/. $FOX_DIR/; fi
+
+      - name: Build
+        run: |
+          cd $FOX_DIR
+          set +e +u
+          source build/envsetup.sh
+          export ALLOW_MISSING_DEPENDENCIES=true
+          export LC_ALL=C
+          export FOX_BUILD_DEVICE=$DEVICE
+          export FOX_VARIANT=Fairy
+          lunch twrp_${DEVICE}-eng || exit 1
+          mka adbd vendorbootimage || exit 1
+
+      - name: Collect output
+        run: |
+          mkdir -p out_files
+          cp $FOX_DIR/out/target/product/$DEVICE/vendor_boot.img out_files/ || true
+          cp $FOX_DIR/out/target/product/$DEVICE/OrangeFox*.zip out_files/ 2>/dev/null || true
+          ls -l out_files
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fairy-recovery-${{ env.DEVICE }}
+          path: out_files/*

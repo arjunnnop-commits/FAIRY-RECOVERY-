@@ -1,0 +1,8 @@
+kernel release : 6.1.177-Ruyi-saan
+module vermagic: 6.1.138-android14-11-maybe-dirty SMP preempt mod_unload modversions aarch64
+modules        : 219
+header version : 4  page 4096
+kernel_addr    : 0x40000000
+ramdisk_addr   : 0x66f00000
+tags/dtb addr  : 0x47c80000 / 0x47c80000
+dtb size       : 396049

@@ -1,0 +1,27 @@
+# Logical partitions (super)
+system      /system      erofs  ro  wait,slotselect,logical
+system_ext  /system_ext  erofs  ro  wait,slotselect,logical
+vendor      /vendor      erofs  ro  wait,slotselect,logical
+product     /product     erofs  ro  wait,slotselect,logical
+odm         /odm         erofs  ro  wait,slotselect,logical
+mi_ext      /mi_ext      erofs  ro  wait,slotselect,logical
+
+# Data / metadata / cache
+/dev/block/by-name/metadata  /metadata  f2fs  noatime,nosuid,nodev,discard  wait,check,formattable
+/dev/block/by-name/userdata  /data      f2fs  noatime,nosuid,nodev,discard,inlinecrypt  latemount,wait,check,formattable,quota,reservedsize=128m,resize,fileencryption=aes-256-xts:aes-256-cts:v2+inlinecrypt_optimized,keydirectory=/metadata/vold/metadata_encryption,fsverity
+/dev/block/by-name/rescue    /cache     ext4  noatime,nosuid,nodev,discard  wait,check,formattable
+
+# Raw partitions
+/dev/block/by-name/boot         /boot         emmc  defaults  slotselect,backup=1,flashimg=1
+/dev/block/by-name/init_boot    /init_boot    emmc  defaults  slotselect,backup=1,flashimg=1
+/dev/block/by-name/vendor_boot  /vendor_boot  emmc  defaults  slotselect,backup=1,flashimg=1
+/dev/block/by-name/dtbo         /dtbo         emmc  defaults  slotselect,backup=1,flashimg=1
+/dev/block/by-name/vbmeta       /vbmeta       emmc  defaults  slotselect,flashimg=1
+/dev/block/by-name/vbmeta_system /vbmeta_system emmc defaults slotselect,flashimg=1
+/dev/block/by-name/vbmeta_vendor /vbmeta_vendor emmc defaults slotselect,flashimg=1
+
+# Persist / modem etc (backup ke liye)
+/dev/block/by-name/persist  /persist  ext4  noatime,nosuid,nodev  wait,check
+/dev/block/by-name/nvdata   /nvdata   ext4  noatime,nosuid,nodev  wait,check
+/dev/block/by-name/nvcfg    /nvcfg    ext4  noatime,nosuid,nodev  wait,check
+
