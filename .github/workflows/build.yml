@@ -67,7 +67,11 @@ jobs:
           export LC_ALL=C
           export FOX_BUILD_DEVICE=$DEVICE
           export FOX_VARIANT=Fairy
-          lunch twrp_${DEVICE}-eng || exit 1
+          ls build/release/release_configs 2>/dev/null | head -20
+          for c in twrp_${DEVICE}-eng twrp_${DEVICE}-ap2a-eng twrp_${DEVICE}-ap1a-eng twrp_${DEVICE}-ap3a-eng twrp_${DEVICE}-trunk_staging-eng; do
+            echo "== lunch $c"; lunch $c && [ -n "$TARGET_PRODUCT" ] && break
+          done
+          [ -n "$TARGET_PRODUCT" ] || { echo "lunch failed"; exit 1; }
           mka adbd vendorbootimage || exit 1
 
       - name: Collect output
